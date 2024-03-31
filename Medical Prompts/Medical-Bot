@@ -1,1 +1,37 @@
-[Medical-Bot](https://github.com/abilzerian/GPT-4-Prompt-Medical-Bot)
+# Import necessary libraries
+import os
+import openai
+import telegram
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Set up OpenAI API key and Telegram bot token
+openai.api_key = os.getenv("OPENAI_API_KEY")
+bot = telegram.Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
+
+# Define function to generate response using OpenAI API
+def generate_response(prompt):
+    completions = openai.Completion.create(
+        engine="davinci",
+        prompt=prompt,
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+    return completions.choices[0].text
+
+# Define function to handle incoming Telegram messages
+def handle_message(update, context):
+    user_message = update.message.text
+    response = generate_response(user_message)
+    context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+
+# Set up Telegram bot to listen for incoming messages
+updater = telegram.ext.Updater(token=os.getenv("TELEGRAM_BOT_TOKEN"), use_context=True)
+updater.dispatcher.add_handler(telegram.ext.MessageHandler(telegram.ext.Filters.text & ~telegram.ext.Filters.command, handle_message))
+updater.start_polling()
+updater.idle()
+
